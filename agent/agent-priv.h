@@ -195,6 +195,9 @@ struct _NiceAgent
                                          conncheck */
   gboolean consent_freshness;         /* rfc 7675 consent freshness with
                                          connchecks */
+
+  gboolean include_loopback;          /* include loopback candidates (useful
+                                         for offline streaming */
   /* XXX: add pointer to internal data struct for ABI-safe extensions */
 };
 

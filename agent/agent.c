@@ -129,6 +129,7 @@ enum
   PROP_SUPPORT_RENOMINATION,
   PROP_IDLE_TIMEOUT,
   PROP_CONSENT_FRESHNESS,
+  PROP_INCLUDE_LOOPBACK,
 };
 
 
@@ -935,6 +936,22 @@ nice_agent_class_init (NiceAgentClass *klass)
         FALSE,
         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
+   /**
+    * NiceAgent:include-loopback:
+    *
+    * Include loopback addresses in the candidate gathering. This is useful for
+    * offline cases where the device is not connected to any network.
+    *
+    * Since: 0.1.23
+    */
+   g_object_class_install_property (gobject_class, PROP_INCLUDE_LOOPBACK,
+       g_param_spec_boolean (
+          "include-loopback",
+          "Include loopback candidates",
+          "Inlcude loopback candidates in the gathering. Useful for offline streaming",
+          FALSE,
+          G_PARAM_READWRITE));
+
   /* install signals */
 
   /**
@@ -1311,6 +1328,8 @@ nice_agent_init (NiceAgent *agent)
   agent->use_ice_udp = TRUE;
   agent->use_ice_tcp = TRUE;
 
+  agent->include_loopback = FALSE;
+
   agent->stun_resolving_cancellable = g_cancellable_new();
 
   agent->rng = nice_rng_new ();
@@ -1513,6 +1532,10 @@ nice_agent_get_property (
     case PROP_CONSENT_FRESHNESS:
       g_value_set_boolean (value, agent->consent_freshness);
       break;
+
+    case PROP_INCLUDE_LOOPBACK:
+        g_value_set_boolean (value, agent->include_loopback);
+        break;
 
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -1753,6 +1776,10 @@ nice_agent_set_property (
     case PROP_CONSENT_FRESHNESS:
       agent->consent_freshness = g_value_get_boolean (value);
       break;
+
+    case PROP_INCLUDE_LOOPBACK:
+        agent->include_loopback = g_value_get_boolean (value);
+        break;
 
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -3680,7 +3707,7 @@ nice_agent_gather_candidates (
 
   /* if no local addresses added, generate them ourselves */
   if (agent->local_addresses == NULL) {
-    GList *addresses = nice_interfaces_get_local_ips (FALSE);
+    GList *addresses = nice_interfaces_get_local_ips (agent->include_loopback);
     GList *item;
 
     for (item = addresses; item; item = g_list_next (item)) {
